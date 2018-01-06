@@ -6,6 +6,7 @@ class BaseConfig:
     DEFAULT_PAGE_SIZE = 50
     OFFERS_COLLECTION = 'offers'
     TAGS_COLLECTION = 'tags'
+    DAYS_WINDOW = 5
     # MONGO_URI = 'mongodb://user:password@url:port/db_name'
 
 
@@ -30,3 +31,4 @@ CONFIG_MAPPING = {
 
 def get_config(config_name=None):
     config_name = config_name or os.environ.get('APP_CONFIG') or ""
+    return CONFIG_MAPPING.get(config_name.upper(), DevConfig)
