@@ -1,8 +1,7 @@
-from flask_restful import Resource
-
+from .base import JobsbrowserResource
 from ..extensions import restful_api
 
 
 @restful_api.resource('/offers')
-class Offers(Resource):
+class Offers(JobsbrowserResource):
     pass

@@ -4,22 +4,16 @@ from datetime import (
 )
 
 from flask import current_app
-from flask_restful import Resource
 
-from ..extensions import (
-    mongo,
-    restful_api,
-)
+from .base import JobsbrowserResource
+from ..extensions import restful_api
 
 
 @restful_api.resource('/info')
-class Info(Resource):
+class Info(JobsbrowserResource):
     def get(self):
         response = dict()
-        offers_collection = mongo.db[current_app.config.get(
-            'OFFERS_COLLECTION',
-        )]
-        response['offers_number'] = offers_collection.count()
+        response['offers_number'] = self.collections.offers.count()
         response['last_crawl_date'] = str(date.today())
         response.update(self._get_offers_number_per_date())
         return response
@@ -30,12 +24,9 @@ class Info(Resource):
         days_window = current_app.config.get('DAYS_WINDOW')
         day_delta = timedelta(days=1)
         current_day = date.today() - timedelta(days=days_window - 1)
-        offers_collection = mongo.db[current_app.config.get(
-            'OFFERS_COLLECTION',
-        )]
         for _ in range(days_window):
             days.append(str(current_day))
-            offer_count.append(offers_collection.count(
+            offer_count.append(self.collections.offers.count(
                     filter={'date_posted': {'$lte': str(current_day)}},
             ))
             current_day += day_delta
