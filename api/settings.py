@@ -3,10 +3,11 @@ import os
 
 class BaseConfig:
     DEBUG = False
-    DEFAULT_PAGE_SIZE = 50
+    DEFAULT_PAGE_SIZE = 30
     OFFERS_COLLECTION = 'offers'
     TAGS_COLLECTION = 'tags'
-    DAYS_WINDOW = 5
+    DAYS_WINDOW = 30
+    DATE_FORMAT = '%Y-%m-%d'
     # MONGO_URI = 'mongodb://user:password@url:port/db_name'
 
 
