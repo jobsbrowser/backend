@@ -1,29 +1,14 @@
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 from collections import OrderedDict
 
-import pymongo
-
-from flask import (
-    current_app,
-    request,
-)
-
-from .base import JobsbrowserResource
+from .base import BaseOffersResource
 from ..extensions import restful_api
 
 
 @restful_api.resource('/offers/stats')
-class OffersStats(JobsbrowserResource):
+class OffersStats(BaseOffersResource):
     def get(self):
         return self._get_actual_offers_per_day()
-
-    @staticmethod
-    def _parse_date(date_str):
-        date_format = current_app.config.get('DATE_FORMAT')
-        return datetime.strptime(date_str, date_format).date()
 
     def _get_actual_offers_per_day(self):
         offers_count = self._cumsum_offers(self._get_offers(
@@ -49,20 +34,6 @@ class OffersStats(JobsbrowserResource):
             ],
         }
 
-    def _get_offers(self, start_date=None, end_date=None, tags=None, **kwargs):
-        filter_ = dict()
-        if start_date:
-            filter_['valid_through'] = {'$gte': str(start_date)}
-        if end_date:
-            filter_['date_posted'] = {'$lte': str(end_date)}
-        if tags:
-            filter_['tags'] = {'$all': tags}
-        kwargs.setdefault('projection', {})
-        kwargs['projection'].update({'_id': False})
-        kwargs.setdefault('filter', {})
-        kwargs['filter'].update(filter_)
-        return self.collections.offers.find(**kwargs)
-
     def _cumsum_offers(self, offers):
         buckets = OrderedDict.fromkeys(
             list(self._daterange(self.args['from'], self.args['to'])),
@@ -86,32 +57,3 @@ class OffersStats(JobsbrowserResource):
             total += offers_added
             offer_count.append(total)
         return offer_count
-
-    def _daterange(self, start_date, end_date, days_step=1):
-        current_date = start_date
-        days = timedelta(days=days_step)
-        while current_date <= end_date:
-            yield current_date
-            current_date += days
-
-    def _parse_args(self):
-        args = dict()
-        if request.args.get('from'):
-            args['from'] = self._parse_date(request.args['from'])
-        else:
-            oldest_date = self._get_offers(
-                projection={'date_posted': True},
-                sort=[('date_posted', pymongo.ASCENDING)],
-                limit=1,
-            ).next()['date_posted']
-            args['from'] = self._parse_date(oldest_date)
-
-        if request.args.get('to'):
-            args['to'] = self._parse_date(request.args['to'])
-        else:
-            args['to'] = datetime.today().date()
-
-        args['tags'] = list()
-        for tags in request.args.getlist('tags'):
-            args['tags'].extend(tags.split(','))
-        return args

@@ -3,28 +3,28 @@ from flask import (
     request,
 )
 
-from .base import JobsbrowserResource
+from .base import BaseOffersResource
 from ..extensions import restful_api
 
 
 @restful_api.resource('/offers')
-class Offers(JobsbrowserResource):
+class Offers(BaseOffersResource):
     def get(self):
-        return self._paginate(self.collections.offers.find(
-            filter={'tags': {'$all': self.args['tags']}},
-            projection={'_id': False},
+        return self._paginate(self._get_offers(
+            tags=self.args['tags'],
+            filter={
+                'valid_through': {'$gte': str(self.args['from'])},
+                'date_posted': {'$lte': str(self.args['to'])},
+            }
         ))
 
     def _parse_args(self):
-        args = dict()
+        args = super()._parse_args()
         args['page_number'] = int(request.args.get('page_number', 1))
         args['page_size'] = int(request.args.get(
             'page_size',
             current_app.config.get('DEFAULT_PAGE_SIZE'),
         ))
-        args['tags'] = list()
-        for tags in request.args.getlist('tags'):
-            args['tags'].extend(tags.split(','))
         return args
 
     def _paginate(self, cursor):
