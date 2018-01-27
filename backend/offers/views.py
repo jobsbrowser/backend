@@ -61,7 +61,8 @@ class OffersStatsView(GenericAPIView):
         return Response({
             "dates": dates,
             "offer_count": selected_offers_count,
-            "offer_percentage": percentage_offers_count
+            "offer_percentage": percentage_offers_count,
+            "employers": self.calc_employers(selected_offers)
         })
 
     @staticmethod
@@ -93,6 +94,18 @@ class OffersStatsView(GenericAPIView):
                 buckets[offer.valid_through + timedelta(days=1)] -= 1
         return list(accumulate(buckets.values()))
 
+    @staticmethod
+    def calc_employers(offers):
+        employers = {}
+        for offer in offers:
+            counter = employers.get(offer.employer, 0)
+            employers[offer.employer] = counter + 1
+
+        return [
+            {"name": name, "count": count} for name, count
+            in sorted(employers.items(), key=lambda tuple: -tuple[1])
+        ][:10]
+
 
 class SystemInfoView(GenericAPIView):
     queryset = Offer.objects.all()
@@ -108,7 +121,8 @@ class SystemInfoView(GenericAPIView):
 
     def calc_offers_count(self, dates):
         dates_posted = iter(
-            self.get_queryset().order_by('date_posted').values('date_posted').annotate(posted_this_day=Count('date_posted'))
+            self.get_queryset().order_by('date_posted').values(
+                'date_posted').annotate(posted_this_day=Count('date_posted'))
         )
         offers_count = []
         total = 0
@@ -130,4 +144,6 @@ class SystemInfoView(GenericAPIView):
 
 @api_view(['GET'])
 def tags_list_view(request):
-    return Response(Tag.objects.values_list('name', flat=True))
+    return Response(
+        Tag.objects.order_by('name').values_list('name', flat=True)
+    )
