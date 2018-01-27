@@ -40,11 +40,13 @@ class Command(BaseCommand):
             print("Saving...")
             saved_offers = Offer.objects.bulk_create(offers_list)
             offers_map = {offer.offer_id: offer for offer in Offer.objects.all()}
+            print(f"{len(offers_list)} offers saved.")
 
             saved_tags = Tag.objects.bulk_create(Tag(name=tag) for tag in tags_set)
             tags_map = {tag.name: tag for tag in Tag.objects.all()}
+            print(f"{len(tags_set)} tags saved.")
 
-            print("Creating relationships")
+            print("Creating relationships...")
             relationships = []
             for offer_id, offer in offers_map.items():
                 for tag_name in offers_tags[offer_id]:
@@ -52,3 +54,4 @@ class Command(BaseCommand):
                         offer_id=offer.pk, tag_id=tags_map[tag_name].pk
                     ))
             TagOfferRelationship.objects.bulk_create(relationships)
+            print("Done")

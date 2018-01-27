@@ -4,9 +4,10 @@ from itertools import accumulate
 
 from django.conf import settings
 from django.db.models import Count
-from rest_framework.generics import ListAPIView, GenericAPIView
-from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.generics import ListAPIView, GenericAPIView
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
 
 from offers.filters import OffersFilter, SimpleOffersFilter
 from offers.models import Offer, Tag
@@ -19,6 +20,21 @@ class OffersListView(ListAPIView):
     serializer_class = OfferSerializer
     filter_class = OffersFilter
     pagination_class = InfiniteScrollPagination
+
+    renderer_classes = (JSONRenderer,)
+
+    def paginate_queryset(self, queryset):
+        if "export" in self.request.GET:
+            return None
+        else:
+            return super().paginate_queryset(queryset)
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        if "export" in self.request.GET:
+            response[
+                'Content-Disposition'] = 'attachment; filename="offers.json"'
+        return response
 
 
 class OffersStatsView(GenericAPIView):
@@ -92,9 +108,7 @@ class SystemInfoView(GenericAPIView):
 
     def calc_offers_count(self, dates):
         dates_posted = iter(
-            self.get_queryset().values('date_posted').annotate(
-                posted_this_day=Count('date_posted')
-            )
+            self.get_queryset().order_by('date_posted').values('date_posted').annotate(posted_this_day=Count('date_posted'))
         )
         offers_count = []
         total = 0
