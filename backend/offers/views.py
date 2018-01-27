@@ -6,9 +6,10 @@ from django.conf import settings
 from django.db.models import Count
 from rest_framework.generics import ListAPIView, GenericAPIView
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
 from offers.filters import OffersFilter, SimpleOffersFilter
-from offers.models import Offer
+from offers.models import Offer, Tag
 from offers.pagination import InfiniteScrollPagination
 from offers.serializers import OfferSerializer
 
@@ -111,3 +112,8 @@ class SystemInfoView(GenericAPIView):
                         total += item['posted_this_day']
             offers_count.append(total)
         return offers_count
+
+
+@api_view(['GET'])
+def tags_list_view(request):
+    return Response(Tag.objects.values_list('name', flat=True))
