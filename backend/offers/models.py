@@ -28,6 +28,9 @@ class Offer(models.Model):
     def __str__(self):
         return f"[{self.offer_id}] {self.job_title}"
 
+    class Meta:
+        ordering = ['-valid_through']
+
 
 class TagOfferRelationship(models.Model):
     tag = models.ForeignKey('Tag')
