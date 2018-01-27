@@ -135,3 +135,4 @@ REST_FRAMEWORK = {
 SHOW_STATS_FROM = date(2017, 12, 2)
 
 CORS_ORIGIN_ALLOW_ALL = True
+WORD2VEC_MODEL = os.path.join(BASE_DIR, 'tags_model.bin')

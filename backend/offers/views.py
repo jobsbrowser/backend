@@ -2,6 +2,7 @@ from collections import OrderedDict
 from datetime import datetime, timedelta, date
 from itertools import accumulate
 
+from gensim.models import Word2Vec
 from django.conf import settings
 from django.db.models import Count
 from rest_framework.decorators import api_view
@@ -41,6 +42,7 @@ class OffersStatsView(GenericAPIView):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
     filter_class = SimpleOffersFilter
+    _word2vec_model = None
 
     def get(self, request, *args, **kwargs):
         selected_offers = self.filter_offers_for_stats(
@@ -62,8 +64,20 @@ class OffersStatsView(GenericAPIView):
             "dates": dates,
             "offer_count": selected_offers_count,
             "offer_percentage": percentage_offers_count,
-            "employers": self.calc_employers(selected_offers)
+            "employers": self.calc_employers(selected_offers),
+            "most_similar_tags": self.get_most_similar_words(
+                request.GET.getlist('tags'),
+            ),
         })
+
+    def get_most_similar_words(self, tags, topn=10):
+        if self._word2vec_model is None:
+            self._word2vec_model = Word2Vec.load(settings.WORD2VEC_MODEL)
+        return [
+            word for word, score in self._word2vec_model.wv.most_similar(
+                tags, topn=topn
+            )
+        ]
 
     @staticmethod
     def get_days_range():
