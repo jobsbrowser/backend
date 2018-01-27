@@ -8,5 +8,6 @@ class InfiniteScrollPagination(PageNumberPagination):
     def get_paginated_response(self, data):
         return Response({
             'has_more': self.page.has_next(),
+            'total_count': self.page.paginator.count,
             'results': data
         })

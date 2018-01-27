@@ -31,11 +31,14 @@ class OffersListView(ListAPIView):
             return super().paginate_queryset(queryset)
 
     def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        if "export" in self.request.GET:
-            response[
-                'Content-Disposition'] = 'attachment; filename="offers.json"'
-        return response
+        try:
+            response = super().get(request, *args, **kwargs)
+            if "export" in self.request.GET:
+                response['Content-Disposition'] = 'attachment; filename="offers.json"'
+        except MemoryError:
+            return Response(status=500)
+        else:
+            return response
 
 
 class OffersStatsView(GenericAPIView):
@@ -48,6 +51,11 @@ class OffersStatsView(GenericAPIView):
         selected_offers = self.filter_offers_for_stats(
             self.filter_queryset(self.get_queryset())
         )
+        offers_per_tag = {
+            tag: self.filter_offers_for_stats(
+                self.get_queryset().filter(tags__name=tag)
+            ) for tag in self.request.GET.getlist("tags")
+        }
         all_offers = self.filter_offers_for_stats(
             self.get_queryset()
         )
@@ -68,6 +76,13 @@ class OffersStatsView(GenericAPIView):
             "most_similar_tags": self.get_most_similar_words(
                 request.GET.getlist('tags'),
             ),
+            "offer_count_per_tag": [
+                {
+                    "label": tag,
+                    "data": self.calc_offers_count(offers, dates)
+
+                } for tag, offers in offers_per_tag.items()
+            ]
         })
 
     def get_most_similar_words(self, tags, topn=10):
@@ -135,8 +150,9 @@ class SystemInfoView(GenericAPIView):
 
     def calc_offers_count(self, dates):
         dates_posted = iter(
-            self.get_queryset().order_by('date_posted').values(
-                'date_posted').annotate(posted_this_day=Count('date_posted'))
+            self.get_queryset().order_by('date_posted').values('date_posted').annotate(
+                posted_this_day=Count('date_posted')
+            )
         )
         offers_count = []
         total = 0
@@ -158,6 +174,4 @@ class SystemInfoView(GenericAPIView):
 
 @api_view(['GET'])
 def tags_list_view(request):
-    return Response(
-        Tag.objects.order_by('name').values_list('name', flat=True)
-    )
+    return Response(Tag.objects.values_list('name', flat=True))
