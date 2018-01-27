@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from itertools import accumulate
 
 from django.conf import settings
@@ -84,7 +84,9 @@ class SystemInfoView(GenericAPIView):
         dates = OffersStatsView.get_days_range()
         return Response({
             "days": dates,
-            "offers_count": self.calc_offers_count(dates)
+            "offers_count": self.calc_offers_count(dates),
+            "offers_number": self.queryset.count(),
+            "last_crawl_date": date.today(),
         })
 
     def calc_offers_count(self, dates):
