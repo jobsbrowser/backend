@@ -6,7 +6,8 @@ from gensim.models import Word2Vec
 from django.conf import settings
 from django.db.models import Count
 from rest_framework.decorators import api_view
-from rest_framework.generics import ListAPIView, GenericAPIView
+from rest_framework.generics import ListAPIView, GenericAPIView, \
+    ListCreateAPIView
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
@@ -16,7 +17,7 @@ from offers.pagination import InfiniteScrollPagination
 from offers.serializers import OfferSerializer
 
 
-class OffersListView(ListAPIView):
+class OffersListView(ListCreateAPIView):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
     filter_class = OffersFilter
